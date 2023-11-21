@@ -1,0 +1,49 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: C++SingleNeRF",
+            "type": "python",
+            "request": "launch",
+            "program": "train_net.py",
+            "console": "integratedTerminal",
+            "cwd": "/root/NeRF/learning_nerf-master",
+            "args": [
+                "--cfg_file",
+                "configs/img_fit/lego_view0.yaml"
+            ],
+            "justMyCode": true
+        },
+        {
+            "name": "Python: MyNeRF",
+            "type": "python",
+            "request": "launch",
+            "program": "run.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--type",
+                "dataset",
+                "--cfg_file",
+                "configs/nerf/nerf.yaml"
+            ],
+            "cwd": "/root/NeRF/learning_nerf-master",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: CNeRF",
+            "type": "python",
+            "request": "launch",
+            "program": "run_nerf.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--config",
+                "configs/lego.txt"
+            ],
+            "cwd": "/root/NeRF/nerf",
+            "justMyCode": true
+        }
+    ]
+}

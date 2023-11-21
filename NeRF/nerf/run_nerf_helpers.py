@@ -93,13 +93,12 @@ class NeRF(nn.Module):
         self.input_ch_views = input_ch_views
         self.skips = skips
         self.use_viewdirs = use_viewdirs
-
         self.pts_linears = nn.ModuleList(##8个线性层的网络
             [nn.Linear(input_ch, W)]
             + [
                 nn.Linear(W, W)
                 if i not in self.skips
-                else nn.Linear(W + input_ch, W)  ##todo 为什么skip要+W
+                else nn.Linear(W + input_ch, W) 
                 for i in range(D - 1)
             ]
         )
@@ -116,7 +115,7 @@ class NeRF(nn.Module):
             self.alpha_linear = nn.Linear(W, 1)
             self.rgb_linear = nn.Linear(W // 2, 3)
         else:
-            self.output_linear = nn.Linear(W, output_ch)
+            self.output_linear = nn.Linear(W, output_ch)#todo 这个是啥意思
 
     def forward(self, x):  # x(65536,90)
         input_pts, input_views = torch.split(

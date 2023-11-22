@@ -1034,7 +1034,7 @@ def train():
         optimizer.step()
 
         # NOTE: IMPORTANT!
-        ###   update learning rate   ###
+        ###   update le arning rate   ###
         decay_rate = 0.1
         decay_steps = args.lrate_decay * 1000
         new_lrate = args.lrate * (decay_rate ** (global_step / decay_steps))

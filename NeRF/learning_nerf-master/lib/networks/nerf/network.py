@@ -32,17 +32,16 @@ class Network(nn.Module):
             self.rgb_linear = nn.Linear(W // 2, 3)#RGB
         else:
             self.output_linear = nn.Linear(W, output_ch)
-    #todo 看不懂这个output是5 且之后会采样的部分
-    def test_render(self,x,batch):#todo 感觉batch就是前面需要 这里意思一下罢了
-        input_pts, input_views = torch.split(
-            x, [self.input_ch, self.input_ch_views], dim=-1
-        )#这样传入 把俩个区分出来#todo 原来是在外面encoding的限制这个encoder在模型里面 可以写个函数封装在这
-        h=input_pts#todo x 不能这样传
+    #todo 看不懂这个output是5 且之后会采样的部分 看了看原代码 好像只要RGB就行 其他weight都是自己求的
+    def test_render(self,pts,views,batch):#感觉batch就是前面需要 这里意思一下罢了
+        input_pts = self.xyz_encoder(pts)
+        input_views = self.dir_encoder(views)
+        h=input_pts
         for i, l in enumerate(self.pts_linears): #i:0 l:Linear(in_features=63, out_features=256, bias=True)
             h = self.pts_linears[i](h)
             h = F.relu(h)#relu过线性层
             if i in self.skips:
-                h = torch.cat([x, h], -1)#后面的都是256->256 除了skip后是63+256->256 i=4
+                h = torch.cat([input_pts, h], -1)#后面的都是256->256 除了skip后是63+256->256 i=4
         if self.use_viewdirs:#获得最终的rgb
             alpha = self.alpha_linear(h)#(65536,256)->  (65536,1) 
             feature = self.feature_linear(h)
@@ -57,7 +56,21 @@ class Network(nn.Module):
             outputs = self.output_linear(h)
 
         return outputs#(65536,4)
-        
+    
+    def test_batchify(self,pts,views,batch):
+        all_ret = {}
+        chunk = cfg.task_arg.chunk_size
+        for i in range(0, pts.shape[0], chunk):
+            ret = self.test_render(pts[i:i + chunk],views[i:i + chunk], batch)
+            for k in ret:
+                if k not in all_ret:
+                    all_ret[k] = []
+                all_ret[k].append(ret[k])
+        all_ret = {k: torch.cat(all_ret[k], dim=0) for k in all_ret}
+        return all_ret
+    def test_forward(self, batch):
+        pass
+
     def render(self, uv, batch):
         uv_encoding = self.uv_encoder(uv)
         x = uv_encoding

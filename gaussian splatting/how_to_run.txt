@@ -1,4 +1,12 @@
-python train.py -s <path to COLMAP or NeRF Synthetic dataset> -m output/<ramdom> -i subdirectory --eval (with train/test split)
-
+python train.py -s <path to COLMAP or NeRF Synthetic dataset> -m output/<ramdom> 
+-i subdirectory --eval (with train/test split)
+-m 存储模型的地方 
+like MipNeRF360 we target images at resolutions in the 1-1.6K pixel range.自动转换了 
+-r 1保持分辨率 1/N
+--eval Add this flag to use a MipNeRF360-style training/test split for evaluation.
+--ip --port使用GUI
+python train.py -s data -m output/horse 
 python render.py -m <path to trained model> # Generate renderings
 python metrics.py -m <path to trained model> # Compute error metrics on renderings
+提供了SfM dataset for Tanks&Temples and Deep Blending 
+python convert.py -s <location>

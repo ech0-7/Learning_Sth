@@ -901,7 +901,7 @@ def train():
     use_batching = not args.no_batching  # 加速calculate
     if use_batching:
         # For random ray batching
-        print("get rays")
+        print("get rays")#todo ro旋转 rd平移 rgb
         rays = np.stack(
             [get_rays_np(H, W, K, p) for p in poses[:, :3, :4]], 0
         )  # [N, ro+rd, H, W, 3](138,2,400,400,3) #ro旋转 rd平移 2维度列表 stack 138个

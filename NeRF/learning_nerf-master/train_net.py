@@ -46,7 +46,7 @@ def train(cfg, network):
             train_loader.batch_sampler.sampler.set_epoch(epoch)
 
         train_loader.dataset.epoch = epoch#todo 这个调用设置有点神奇 没有这个参数呀 可能是基类相关吧
-
+        #todo 是如何wrapper进来的呀 我烦死了
         trainer.train(epoch, train_loader, optimizer, recorder)#trainer利用网络初始化 调用函数train是后面这些参数 train_loader后续在这里enum好像前面都没有init作为一个参数
         scheduler.step()
 
@@ -99,7 +99,7 @@ def main():
         torch.cuda.set_device(cfg.local_rank)
         torch.distributed.init_process_group(backend="nccl",init_method="env://")
         synchronize()
-
+    #todo 这个network wrapper前原来是先make的
     network = make_network(cfg)#Network初始化后的4个参数的网络类
     if args.test:
         test(cfg, network)

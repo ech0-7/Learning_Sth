@@ -76,7 +76,6 @@ def load_blender_data(basedir, half_res=False, testskip=1):
             np.float32
         )  # keep all 4 channels (RGBA) 归一  (100stack的,800,800,4)
         poses = np.array(poses).astype(np.float32)  #(100,4,4)
-        ## todo
         counts.append(counts[-1] + imgs.shape[0])  # 0,100,113,138
         all_imgs.append(imgs)
         all_poses.append(poses)  # train(100) val(13,800,800,4) test (25)
@@ -87,9 +86,9 @@ def load_blender_data(basedir, half_res=False, testskip=1):
     poses = np.concatenate(all_poses, 0)  # (138,4,4)  0维度拼接
 
     H, W = imgs[0].shape[:2]
-    camera_angle_x = float(meta["camera_angle_x"])
+    camera_angle_x = float(meta["camera_angle_x"])#todo 是哪一个呀
     focal = 0.5 * W / np.tan(0.5 * camera_angle_x)
-##todo 什么是camera_angle_x和render_poses
+
     render_poses = torch.stack(
         [
             pose_spherical(angle, -30.0, 4.0)#半径4 俯仰角-30度

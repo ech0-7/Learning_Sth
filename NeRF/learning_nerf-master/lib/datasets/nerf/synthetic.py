@@ -1,3 +1,4 @@
+import torch
 import torch.utils.data as data
 import numpy as np
 import os
@@ -7,6 +8,46 @@ from torchvision import transforms as T
 import imageio
 import json
 import cv2
+#todo 方便理解 不写在utils里了
+trans_t = lambda t: torch.Tensor(
+    [[1, 0, 0, 0], 
+     [0, 1, 0, 0], 
+     [0, 0, 1, t], 
+     [0, 0, 0, 1]]
+).float()
+
+rot_phi = lambda phi: torch.Tensor(
+    [
+        [1, 0, 0, 0], 
+        [0, np.cos(phi), -np.sin(phi), 0],
+        [0, np.sin(phi), np.cos(phi), 0],
+        [0, 0, 0, 1],
+    ]
+).float()
+
+rot_theta = lambda th: torch.Tensor(#Y不动
+    [
+        [np.cos(th), 0, -np.sin(th), 0],
+        [0, 1, 0, 0],
+        [np.sin(th), 0, np.cos(th), 0],
+        [0, 0, 0, 1],
+    ]
+).float()
+
+def pose_spherical(theta, phi, radius):
+    c2w = trans_t(radius)
+    c2w = rot_phi(phi / 180.0 * np.pi) @ c2w
+    c2w = rot_theta(theta / 180.0 * np.pi) @ c2w
+    c2w = (
+        torch.Tensor(
+            np.array([[-1, 0, 0, 0], 
+                      [0, 0, 1, 0], 
+                      [0, 1, 0, 0], 
+                      [0, 0, 0, 1]])
+        )
+        @ c2w
+    )
+    return c2w
 
 
 class Dataset(data.Dataset):
@@ -14,38 +55,42 @@ class Dataset(data.Dataset):
         super(Dataset, self).__init__()
         data_root, split, scene = kwargs['data_root'], kwargs['split'], cfg.scene#synthetic train lego
         #view = eval(kwargs['cams'])
-        view = kwargs['cams']
         self.input_ratio = kwargs['input_ratio']#1
         self.data_root = os.path.join(data_root, scene)#logo
         self.split = split#train
-        #self.batch_size = cfg.task_arg.N_pixels#todo 8192->2 chosen
-
+        #todo my edition
+        self.white_bkgd=kwargs['white_bkgd']
+        skips = kwargs['cams']
         # read image
         imgs = []
         poses = []
         image_paths = []
-        json_info = json.load(open(os.path.join(self.data_root, 'transforms_{}.json'.format('train'))))
+        json_info = json.load(open(os.path.join(self.data_root, 'transforms_{}.json'.format(self.split))))
         for frame in json_info['frames']:#dict
             image_paths.append(os.path.join(self.data_root, frame['file_path'][2:] + '.png'))
             poses.append(np.array(frame['transform_matrix']))
-        #训练的 0->[0:100::8] 一次只能读一个啊啊啊 白改了
-        for path in image_paths[view[0]:view[1]:view[2]]:
+        # skip&set
+        for path in image_paths[skips[0]:skips[1]:skips[2]]:
             img= imageio.imread(path)/255.0.astype(np.float32)
-            img = img[..., :3] * img[..., -1:] + (1 - img[..., -1:])
+            if self.white_bkgd:
+                img = img[..., :3] * img[..., -1:] + (1 - img[..., -1:])    
             if self.input_ratio != 1.:
                 img = cv2.resize(img, None, fx=self.input_ratio, fy=self.input_ratio, interpolation=cv2.INTER_AREA)
             imgs.append(img)
         imgs=np.array(imgs)
-        # set pose
+        self.counts=imgs.shape[0]
         self.poses = np.array(poses).astype(np.float32)
-        # set image
         self.imgs = imgs.astype(np.float32)
-        # set uv
-        H, W = imgs.shape[:2]
-        X, Y = np.meshgrid(np.arange(W), np.arange(H))#(800,800)
-        u, v = X.astype(np.float32) / (W-1), Y.astype(np.float32) / (H-1)#0~799归一
-        self.uv = np.stack([u, v], -1).reshape(-1, 2).astype(np.float32)#(800,800,2)->(640000,2) 0~1的一列 和相同值的一列 
-        #UV 映射是一种将 2D 图像坐标（像素位置）映射到 3D 模型表面的方法。在这里，它首先创建一个网格，然后将网格的坐标归一化，并将结果存储在 self.uv 中。最后，在 __getitem__ 方法中，它从 UV 映射中随机选择一些点
+        self.H, self.W = imgs[0].shape[:2]
+        camera_angle_x=float(json_info['camera_angle_x'])
+        self.focal = 0.5 * W / np.tan(0.5 * camera_angle_x)
+        self.render_poses = torch.stack(
+        [
+            pose_spherical(angle, -30.0, 4.0)#半径4 俯仰角-30度
+            for angle in np.linspace(-180, 180, 40 + 1)[:-1]
+        ],
+        0,
+    )
     def __getitem__(self, index):
         if self.split == 'train':
             ids = np.random.choice(len(self.uv), self.batch_size, replace=False)

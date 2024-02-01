@@ -24,7 +24,7 @@ def train(cfg, network):
     val_loader = make_data_loader(cfg, is_train=False)
     trainer = make_trainer(cfg, network, train_loader)#todo 初始化的时候 train_loader好像没咋调用
 
-    optimizer = make_optimizer(cfg, network)##todo params是啥
+    optimizer = make_optimizer(cfg, network)
     scheduler = make_lr_scheduler(cfg, optimizer)
     recorder = make_recorder(cfg)
     evaluator = make_evaluator(cfg)

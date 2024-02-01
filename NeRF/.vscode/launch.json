@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "train_net.py",
             "console": "integratedTerminal",
-            "cwd": "/root/NeRF/learning_nerf-master",
+            "cwd": "/root/Learning_Sth/NeRF/learning_nerf-master",
             "args": [
                 "--cfg_file",
                 "configs/img_fit/lego_view0.yaml"
@@ -29,7 +29,7 @@
                 "--cfg_file",
                 "configs/nerf/nerf.yaml"
             ],
-            "cwd": "/root/NeRF/learning_nerf-master",
+            "cwd": "/root/Learning_Sth/NeRF/learning_nerf-master",
             "justMyCode": true
         },
         {
@@ -42,7 +42,7 @@
                 "--config",
                 "configs/lego.txt"
             ],
-            "cwd": "/root/NeRF/nerf",
+            "cwd": "/root/Learning_Sth/NeRF/nerf",
             "justMyCode": true
         }
     ]

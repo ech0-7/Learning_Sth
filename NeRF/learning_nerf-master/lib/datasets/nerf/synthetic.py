@@ -126,7 +126,7 @@ class Dataset(data.Dataset):
         self.rays_rgb=rays_rgb
 
     #todo 把using Batching的那些东西都拿过来 先K的内参矩阵得到rays_d rays_o直接是trans最后一列得到1024的rays
-    #todo 期间一直保留rgb在最后一个位置上(,3)的形式 PE是网络的部分了就
+    #todo 生成一个维度用于 xyz与rgb的 stack
     #todo using Batching的方法可以通过 iterableDataset或者BatchSampler一下1024个实现 这里直接自己写了
 
     def __getitem__(self, index):

@@ -148,5 +148,5 @@ class Dataset(data.Dataset):
         return ret
 
     def __len__(self):#数据集对象的 __len__ 方法来确定每个 epoch 的迭代次数。这是因为 DataLoader 需要知道在每个 epoch 中有多少批次（batch）的数据
-        # we only fit 1 images, so we return 1
+        # we only fit 1 images, so we return 1 #size//N_rays最合理从tqdm来看的话
         return 100

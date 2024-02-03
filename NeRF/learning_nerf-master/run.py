@@ -9,6 +9,7 @@ def run_dataset():
     cfg.train.num_workers = 0
     data_loader = make_data_loader(cfg, is_train=True)#这里默认test再debug了 我这里只是看看跑不跑通改true了
     for batch in tqdm.tqdm(data_loader):
+        print(batch)
         pass
 
 def run_network():

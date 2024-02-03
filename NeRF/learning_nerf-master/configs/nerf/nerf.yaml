@@ -34,8 +34,8 @@ network:
 train_dataset:
     data_root: 'data/nerf_synthetic' # data path 需要写
     split: 'train'
-    input_ratio: 1. # input image ratio, you can set it to 0.5 to acclerate training
-    cams: [0,-1,1] # input cameras, you can use this variable to select training images
+    input_ratio: 1. #  you can set it to 0.5 to acclerate training
+    cams: [0,-1,1] # None就-1吧 配置文件写得不好看
 
 test_dataset:
     data_root: 'data/nerf_synthetic'

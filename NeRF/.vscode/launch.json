@@ -18,7 +18,7 @@
             "justMyCode": true
         },
         {
-            "name": "Python: MyNeRF",
+            "name": "Python: dataset",
             "type": "python",
             "request": "launch",
             "program": "run.py",
@@ -43,6 +43,21 @@
                 "configs/lego.txt"
             ],
             "cwd": "/root/Learning_Sth/NeRF/nerf",
+            "justMyCode": true
+        },
+       {
+            "name": "Python: network",
+            "type": "python",
+            "request": "launch",
+            "program": "run.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--type",
+                "network",
+                "--cfg_file",
+                "configs/nerf/nerf.yaml"
+            ],
+            "cwd": "/root/Learning_Sth/NeRF/learning_nerf-master",
             "justMyCode": true
         }
     ]

@@ -44,8 +44,8 @@ class Trainer(object):
     def train(self, epoch, data_loader, optimizer, recorder):
         max_iter = len(data_loader)#self.num_iterations 500
         self.network.train()#设置模式
-        end = time.time()#todo 这里已经封装到sampler里面了 看不了dataloader 直接 for batch in sampler就能yield了
-        for iteration, batch in enumerate(data_loader):#为什么到了9(也就是10)后面就单个就返回了,才yield返回第一个batch呢 eval_ep:10
+        end = time.time()#todo 直接 for batch in sampler就能yield了  get的是什么东西呢
+        for iteration, batch in enumerate(data_loader):#到10的时候才真的yield出来了为什么 然后就进入yield的循环了
             data_time = time.time() - end
             iteration = iteration + 1#因为里面是yield所以才在外面也+1吗
 
@@ -73,7 +73,7 @@ class Trainer(object):
             end = time.time()
             recorder.batch_time.update(batch_time)
             recorder.data_time.update(data_time)
-            #500 step 100下一输出
+            #500 step 100输出一下训练结果
             self.global_step += 1#这里global_step是不是就是iteration 值是一样的 内外iteration不统一奇怪
             if iteration % cfg.log_interval == 0 or iteration == (max_iter - 1):
                 # print training state

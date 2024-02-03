@@ -898,7 +898,7 @@ def train():
     #todo 这里开始N_rand光线
     # Prepare raybatch tensor if batching random rays
     N_rand = args.N_rand  # 1024
-    use_batching = not args.no_batching  #todo 原来没有用batching 这个batching的是图片感觉  
+    use_batching = args.no_batching  #todo 原来没有用batching 这个batching的是图片感觉  
     if use_batching:
         # For random ray batching
         print("get rays")#todo ro旋转 rd平移 rgb

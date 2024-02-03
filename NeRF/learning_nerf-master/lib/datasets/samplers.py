@@ -63,12 +63,12 @@ class IterationBasedBatchSampler(BatchSampler):
         iteration = self.start_iter
         while iteration <= self.num_iterations:
             for batch in self.batch_sampler:
-                #print('yield', iteration, batch)#为啥不返回呀
+                print('yield', iteration, batch)#为啥不返回呀
                 iteration += 1#为什么要先到10才进循环 #todo 返回之前dataset的len
                 #print(iteration)
                 if iteration > self.num_iterations:
                     break
-                yield batch#todo 不懂yield的batch是怎么调用的 好像是根据dataset对象getitem创建的
+                yield batch
 
     def __len__(self):
         return self.num_iterations

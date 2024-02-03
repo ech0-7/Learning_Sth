@@ -11,7 +11,7 @@ class NetworkWrapper(nn.Module):
         self.mse2psnr = lambda x : -10. * torch.log(x) / torch.log(torch.Tensor([10.]))
 
     def forward(self, batch):
-        output = self.net(batch)
+        output = self.net(batch)#(1,8192,3)
 
         scalar_stats = {}
         loss = 0

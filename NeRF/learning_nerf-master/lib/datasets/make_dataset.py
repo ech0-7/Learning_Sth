@@ -45,7 +45,7 @@ def make_data_sampler(dataset, shuffle, is_distributed):
     if is_distributed:
         return samplers.DistributedSampler(dataset, shuffle=shuffle)
     if shuffle:
-        sampler = torch.utils.data.sampler.RandomSampler(dataset)
+        sampler = torch.utils.data.sampler.RandomSampler(dataset)#todo 调用len?
     else:
         sampler = torch.utils.data.sampler.SequentialSampler(dataset)
     return sampler
@@ -91,7 +91,7 @@ def make_data_loader(cfg, is_train=True, is_distributed=False, max_iter=-1):
     dataset = make_dataset(cfg, is_train)
     sampler = make_data_sampler(dataset, shuffle, is_distributed)
     batch_sampler = make_batch_data_sampler(cfg, sampler, batch_size,
-                                            drop_last, max_iter, is_train)#max_iter=500 size=1
+                                            drop_last, max_iter, is_train)#max_iter=500 batch size=1
     num_workers = cfg.train.num_workers#4
     collator = make_collator(cfg, is_train)#数据集中获取的单个数据样本组合成一个批次，以便在训练或推理过程中一次处理多个样本
     data_loader = DataLoader(dataset,

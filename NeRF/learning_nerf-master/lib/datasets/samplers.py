@@ -64,7 +64,7 @@ class IterationBasedBatchSampler(BatchSampler):
         while iteration <= self.num_iterations:
             for batch in self.batch_sampler:
                 #print('yield', iteration, batch)#为啥不返回呀
-                iteration += 1#为什么要先到10才进循环
+                iteration += 1#为什么要先到10才进循环 #todo 返回之前dataset的len
                 #print(iteration)
                 if iteration > self.num_iterations:
                     break

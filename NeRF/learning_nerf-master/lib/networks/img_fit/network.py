@@ -19,17 +19,17 @@ class Network(nn.Module):
                 )
 
     def render(self, uv, batch):
-        uv_encoding = self.uv_encoder(uv)
+        uv_encoding = self.uv_encoder(uv)#(8192,2)->(8192,42)
         x = uv_encoding
         for i, l in enumerate(self.backbone_layer):
             x = self.backbone_layer[i](x)
             x = F.relu(x)
         rgb = self.output_layer(x)
-        return {'rgb': rgb}
+        return {'rgb': rgb}#(8192,3)
 
     def batchify(self, uv, batch):
         all_ret = {}
-        chunk = cfg.task_arg.chunk_size
+        chunk = cfg.task_arg.chunk_size#16384>8192
         for i in range(0, uv.shape[0], chunk):
             ret = self.render(uv[i:i + chunk], batch)#8192,3
             for k in ret:
@@ -39,7 +39,7 @@ class Network(nn.Module):
         all_ret = {k: torch.cat(all_ret[k], dim=0) for k in all_ret}#字典推导 每个chunk合体cat
         return all_ret
 
-    def forward(self, batch):
-        B, N_pixels, C = batch['uv'].shape#1 8192 2
+    def forward(self, batch):#batch uv rgb meta(H 800 W 800) step的字典
+        B, N_pixels, C = batch['uv'].shape#(1 8192 2) batch['rgb'] (1,8192,3)
         ret = self.batchify(batch['uv'].reshape(-1, C), batch)
         return {k:ret[k].reshape(B, N_pixels, -1) for k in ret}#(1,8192,3)

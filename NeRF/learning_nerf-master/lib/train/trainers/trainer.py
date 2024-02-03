@@ -42,9 +42,9 @@ class Trainer(object):
         return batch
 
     def train(self, epoch, data_loader, optimizer, recorder):
-        max_iter = len(data_loader)#self.num_iterations
+        max_iter = len(data_loader)#self.num_iterations 500
         self.network.train()#设置模式
-        end = time.time()
+        end = time.time()#todo 这里已经封装到sampler里面了 看不了dataloader 直接 for batch in sampler就能yield了
         for iteration, batch in enumerate(data_loader):#为什么到了9(也就是10)后面就单个就返回了,才yield返回第一个batch呢 eval_ep:10
             data_time = time.time() - end
             iteration = iteration + 1#因为里面是yield所以才在外面也+1吗

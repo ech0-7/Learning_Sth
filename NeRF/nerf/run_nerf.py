@@ -44,7 +44,7 @@ def run_network(inputs, viewdirs, fn, embed_fn, embeddirs_fn, netchunk=1024 * 64
     """Prepares inputs and applies network 'fn'."""
     inputs_flat = torch.reshape(
         inputs, [-1, inputs.shape[-1]]
-    )  # pts(1024,64,3)->(65536,3)
+    )  # pts(1024,64,3)->(65536,3) 这里是线+64采样后的
     embedded = embed_fn(inputs_flat)  # (65536,63) 拓展到63维度
 
     if viewdirs is not None:#(1024,3)
@@ -55,11 +55,11 @@ def run_network(inputs, viewdirs, fn, embed_fn, embeddirs_fn, netchunk=1024 * 64
         embedded_dirs = embeddirs_fn(input_dirs_flat)  # (65536,27)
         embedded = torch.cat([embedded, embedded_dirs], -1)  # (65536,63+27)
     #全都flat 1024*64samples fn是网络的函数进了forward 如果没有用chunk直接fn单个 如果用了的话 每个小chunk fn
-    outputs_flat = batchify(fn, netchunk)(embedded)  #####flat(65536,4)这里return一个函数ret 所以在里面定义了函数 fn找不到函数在kwargs 
+    outputs_flat = batchify(fn, netchunk)(embedded)  ##todo flat(65536,4)这里return一个函数ret 所以在里面定义了函数 fn找不到函数 在kwargs 
     outputs = torch.reshape( # list[shape] [1024,64,4]reshape的list就行
         outputs_flat, list(inputs.shape[:-1]) + [outputs_flat.shape[-1]]#[1024,64,4]
-    )
-    return outputs#(1024,64,4)再次分成64sample的情况 65536的
+    )#flat的转化为原来的数据
+    return outputs#(1024,64,4)再次分成64sample的情况 65536的 这个是rgb+alpha的4
 
 
 def batchify_rays(rays_flat, chunk=1024 * 32, **kwargs):#todo render_rays大工程 sample pdf
@@ -127,8 +127,8 @@ def render(
             rays_o, rays_d = get_rays(H, W, K, c2w_staticcam)
         viewdirs = viewdirs / torch.norm(
             viewdirs, dim=-1, keepdim=True
-        )  #除以L2范数得到方向
-        viewdirs = torch.reshape(viewdirs, [-1, 3]).float()
+        )  #除以L2范数得到方向 归一
+        viewdirs = torch.reshape(viewdirs, [-1, 3]).float()#(1024,3)
 
     sh = rays_d.shape  # [..., 3](1024,3)
     if ndc:  # todo if skip了
@@ -146,11 +146,11 @@ def render(
     )
     rays = torch.cat([rays_o, rays_d, near, far], -1)  # 最里的列(1024,3+3+1+1)
     if use_viewdirs:
-        rays = torch.cat([rays, viewdirs], -1)#(1024,3+3+1+1+3) L2后的rays_d
+        rays = torch.cat([rays, viewdirs], -1)#(1024,3+3+1+1+3) L2后的rays_d #todo可能再多一个先验
 
     # Render and reshape
     all_ret = batchify_rays(rays, chunk, **kwargs)
-    for k in all_ret:#todo不能理解这样reshape有什么用不一直是这个结果吗
+    for k in all_ret:#todo不能理解这样reshape有什么用不一直是这个结果吗 可能结果更规范吧
         k_sh = list(sh[:-1]) + list(all_ret[k].shape[1:])#[1024,+3]  rays_d的1024维度 + 此时k不要第一的1024的组合维度#todo真的有维度不对应吗
         all_ret[k] = torch.reshape(all_ret[k], k_sh)
 
@@ -253,7 +253,7 @@ def create_nerf(args):
         embed_fn=embed_fn,
         embeddirs_fn=embeddirs_fn,
         netchunk=args.netchunk,  # 1024*64神经网络块大小 加速计算 N_samples 64 N_importance 128
-    )
+    )#todo 这里调试看看batchfy
 
     # Create optimizer
     optimizer = torch.optim.Adam(params=grad_vars, lr=args.lrate, betas=(0.9, 0.999))
@@ -457,7 +457,7 @@ def render_rays(
     ##todo这里可能是转化成了世界坐标系中的点了 平移d+坐标原点o的位置
 
     #     raw = run_network(pts)   
-    raw = network_query_fn(pts, viewdirs, network_fn)#raw (1024,64,4) 返回完了rgb+alpha的采样了
+    raw = network_query_fn(pts, viewdirs, network_fn)#raw (1024,64,4) 返回完了rgb+alpha的采样N_sample=64了
     rgb_map, disp_map, acc_map, weights, depth_map = raw2outputs(
         raw, z_vals, rays_d, raw_noise_std, white_bkgd, pytest=pytest
     )#z_vals (1024,64)  rays_d (1024,3)  raw_noise_std 0.0  white_bkgd True pytest False
@@ -895,19 +895,19 @@ def train():
             )
 
             return
-
+    #todo 这里开始N_rand光线
     # Prepare raybatch tensor if batching random rays
     N_rand = args.N_rand  # 1024
-    use_batching = not args.no_batching  # 加速calculate
+    use_batching = not args.no_batching  #todo 原来没有用batching 这个batching的是图片感觉  
     if use_batching:
         # For random ray batching
         print("get rays")#todo ro旋转 rd平移 rgb
         rays = np.stack(
             [get_rays_np(H, W, K, p) for p in poses[:, :3, :4]], 0
         )  # [N, ro+rd, H, W, 3](138,2,400,400,3) #ro旋转 rd平移 2维度列表 stack 138个
-        print("done, concats")
-        rays_rgb = np.concatenate([rays, images[:, None]], 1)  # [N, ro+rd+rgb, H, W, 3]
-        rays_rgb = np.transpose(rays_rgb, [0, 2, 3, 1, 4])  # [N, H, W, ro+rd+rgb, 3]
+        print("done, concats")#世界坐标系
+        rays_rgb = np.concatenate([rays, images[:, None]], 1)  # [N, ro+rd+new, H, W, 3]
+        rays_rgb = np.transpose(rays_rgb, [0, 2, 3, 1, 4])  # [N, H, W, ro+rd+new, 3]
         rays_rgb = np.stack(
             [rays_rgb[i] for i in i_train], 0
         )  # train images only(100,400,400,3,3)
@@ -922,7 +922,7 @@ def train():
         i_batch = 0
 
     # Move training data to GPU
-    if use_batching:
+    if use_batching:#前面是NP后面to tensor
         images = torch.Tensor(images).to(device)
     poses = torch.Tensor(poses).to(device)
     if use_batching:
@@ -944,12 +944,12 @@ def train():
         time0 = time.time()
 
         # Sample random ray batch
-        if use_batching:            # Random over all images# [Batch, 2+1, 3*?](1024,ro+rd+rgb,3)
-            batch = rays_rgb[i_batch : i_batch + N_rand]  
+        if use_batching:            # Random over   all images# [Batch, 2+1, 3*?](1024,ro+rd+rgb,3)
+            batch = rays_rgb[i_batch : i_batch + N_rand]  #每次取1024个就完事 1600000shuffle后
             batch = torch.transpose(
                 batch, 0, 1
             )  # (3,1024,3) 后面俩才是要换是维度 多个可以用列表传入 rays_rgb = np.transpose(rays_rgb, [0, 2, 3, 1, 4])
-            batch_rays, target_s = batch[:2], batch[2]  # (2,1024,3) (1024,3)左闭右开感觉 2是ro+rd 3是rgb的数据 1024*3的大小
+            batch_rays, target_s = batch[:2], batch[2]  # 取rt rd(2,1024,3) (1024,3)左闭右开感觉 2是ro+rd 3是rgb的数据 1024*3的大小
 
             i_batch += N_rand
             if i_batch >= rays_rgb.shape[0]:  # 重新刷新
@@ -960,17 +960,17 @@ def train():
 
         else:#todo单个
             # Random from one image
-            img_i = np.random.choice(i_train)
+            img_i = np.random.choice(i_train)#选择里面的一个index
             target = images[img_i]
             target = torch.Tensor(target).to(device)
-            pose = poses[img_i, :3, :4]
+            pose = poses[img_i, :3, :4]#(3,4) 外参
 
-            if N_rand is not None:
+            if N_rand is not None:#外参矩阵转化后的 旋转变化的ray
                 rays_o, rays_d = get_rays(
                     H, W, K, torch.Tensor(pose)
                 )  # (H, W, 3), (H, W, 3)
 
-                if i < args.precrop_iters:
+                if i < args.precrop_iters:#i是循环的次数
                     dH = int(H // 2 * args.precrop_frac)
                     dW = int(W // 2 * args.precrop_frac)
                     coords = torch.stack(
@@ -979,7 +979,7 @@ def train():
                             torch.linspace(W // 2 - dW, W // 2 + dW - 1, 2 * dW),
                         ),
                         -1,
-                    )
+                    )#(200,200,2)的一个坐标轴
                     if i == start:
                         print(
                             f"[Config] Center cropping of size {2*dH} x {2*dW} is enabled until iter {args.precrop_iters}"
@@ -995,11 +995,11 @@ def train():
                 coords = torch.reshape(coords, [-1, 2])  # (H * W, 2)
                 select_inds = np.random.choice(
                     coords.shape[0], size=[N_rand], replace=False
-                )  # (N_rand,)
+                )  # (N_rand,) 挑选坐标轴中1024的inds 一个维度的数字 挑选出坐标 1024个然后得到光线
                 select_coords = coords[select_inds].long()  # (N_rand, 2)
                 rays_o = rays_o[select_coords[:, 0], select_coords[:, 1]]  # (N_rand, 3)
                 rays_d = rays_d[select_coords[:, 0], select_coords[:, 1]]  # (N_rand, 3)
-                batch_rays = torch.stack([rays_o, rays_d], 0)
+                batch_rays = torch.stack([rays_o, rays_d], 0)#(2,N_rand,3) 就是每一行堆在一起了
                 target_s = target[
                     select_coords[:, 0], select_coords[:, 1]
                 ]  # (N_rand, 3)
@@ -1010,7 +1010,7 @@ def train():
             W,
             K,
             chunk=args.chunk,
-            rays=batch_rays,
+            rays=batch_rays,#no batching是一张图片里面的坐标和点 batching
             verbose=i < 10,
             retraw=True,
             **render_kwargs_train,

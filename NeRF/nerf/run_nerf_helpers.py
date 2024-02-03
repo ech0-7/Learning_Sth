@@ -195,7 +195,7 @@ class NeRF(nn.Module):
 
 
 # Ray helpers
-def get_rays(H, W, K, c2w):#todo if skip了
+def get_rays(H, W, K, c2w):
     i, j = torch.meshgrid(
         torch.linspace(0, W - 1, W), torch.linspace(0, H - 1, H)
     )  # pytorch's meshgrid has indexing='ij'
@@ -203,23 +203,23 @@ def get_rays(H, W, K, c2w):#todo if skip了
     j = j.t()
     dirs = torch.stack(
         [(i - K[0][2]) / K[0][0], -(j - K[1][2]) / K[1][1], -torch.ones_like(i)], -1
-    )
+    )#得到图像的HW网格 内参矩阵转化 (400,400,3) 最后一列-1
     # Rotate ray directions from camera frame to the world frame
     rays_d = torch.sum(
         dirs[..., np.newaxis, :] * c2w[:3, :3], -1
-    )  # dot product, equals to: [c2w.dot(dir) for dir in dirs]
+    )  # dot product, equals to: [c2w.dot(dir) for dir in dirs] (400,400,1,3)*(3,4)
     # Translate camera frame's origin to the world frame. It is the origin of all rays.
-    rays_o = c2w[:3, -1].expand(rays_d.shape)
+    rays_o = c2w[:3, -1].expand(rays_d.shape) #变形矩阵最后一列
     return rays_o, rays_d
 
 
-def get_rays_np(H, W, K, c2w):
+def get_rays_np(H, W, K, c2w):#np实现的
     i, j = np.meshgrid(#像素尺寸 
         np.arange(W, dtype=np.float32), np.arange(H, dtype=np.float32), indexing="xy"
     )  # (400,400)[0,1,2,3,...,400]~[0,0,0,0,...,0] 400行列
     dirs = np.stack(
         [(i - K[0][2]) / K[0][0], -(j - K[1][2]) / K[1][1], -np.ones_like(i)], -1
-    )  # 相机坐标K处理 xy缩放和平移   ##(400,400,3) #0的话是(3,400,400) 一个矩阵全是-1可还行 0是按自己的列可能单拎出来 -1是在最后叠
+    )  # 像素坐标K处理 xy缩放和平移   ##(400,400,3) #0的话是(3,400,400) 一个矩阵全是-1可还行 0是按自己的列可能单拎出来 -1是在最后叠
     # Rotate ray directions from camera frame  to the world frame
     rays_d = np.sum(  # (400,400,1,3)*(3,3)  (3是3列xy与-1)（1是单纯多一个包了3变成[[x,y,-1]] )(400就是400个[[x,y,-1]])
         dirs[..., np.newaxis, :] * c2w[:3, :3], -1  # (1,3)与c2w(3,3)逐元素 每行求值 (400,400,3,3)列加后行当列 (1,3)(3,3) 可能这样点乘后+就是c2w@dir吧(3,3)(3,1)最后的都是减去然后sum

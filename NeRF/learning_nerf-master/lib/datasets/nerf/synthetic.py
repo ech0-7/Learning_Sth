@@ -79,11 +79,11 @@ class Dataset(data.Dataset):
             imgs.append(img)
         imgs=np.array(imgs)
         self.counts=imgs.shape[0]
-        self.poses = np.array(poses).astype(np.float32)
+        self.poses = np.array(poses).astype(np.float32)#100,4,4 rt rd
         self.imgs = imgs.astype(np.float32)
         self.H, self.W = imgs[0].shape[:2]
         camera_angle_x=float(json_info['camera_angle_x'])
-        self.focal = 0.5 * W / np.tan(0.5 * camera_angle_x)
+        self.focal = 0.5 * self.W / np.tan(0.5 * camera_angle_x)
         self.render_poses = torch.stack(
         [
             pose_spherical(angle, -30.0, 4.0)#半径4 俯仰角-30度
@@ -91,6 +91,9 @@ class Dataset(data.Dataset):
         ],
         0,
     )
+    #todo 把using Batching的那些东西都拿过来 先K的内参矩阵得到rays_d rays_o直接是trans最后一列得到1024的rays
+    #todo 想要多一点的话可以 L2正则化的作为另外的输入
+    #todo 期间一直保留rgb在最后一个位置上(,3)的形式 PE是网络的部分了就
     def __getitem__(self, index):
         if self.split == 'train':
             ids = np.random.choice(len(self.uv), self.batch_size, replace=False)
@@ -105,4 +108,4 @@ class Dataset(data.Dataset):
 
     def __len__(self):#数据集对象的 __len__ 方法来确定每个 epoch 的迭代次数。这是因为 DataLoader 需要知道在每个 epoch 中有多少批次（batch）的数据
         # we only fit 1 images, so we return 1
-        return 1#todo dataloader的时候为什么调用这里的len呢 说的位置是torch.utils.data.sampler.BatchSampler
+        return 1

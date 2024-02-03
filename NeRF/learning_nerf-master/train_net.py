@@ -17,7 +17,7 @@ if cfg.fix_random:
 
 
 def train(cfg, network):
-    train_loader = make_data_loader(cfg,
+    train_loader = make_data_loader(cfg, #发现这个没有getitem是如何调用的
                                     is_train=True,#处于才
                                     is_distributed=cfg.distributed,
                                     max_iter=cfg.ep_iter)#最大迭代次数500
@@ -40,7 +40,7 @@ def train(cfg, network):
 
     set_lr_scheduler(cfg, scheduler)
 
-    for epoch in range(begin_epoch, cfg.train.epoch):#20个epoch img
+    for epoch in range(begin_epoch, cfg.train.epoch+1):#20个epoch img
         recorder.epoch = epoch
         if cfg.distributed:
             train_loader.batch_sampler.sampler.set_epoch(epoch)
